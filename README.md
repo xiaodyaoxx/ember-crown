@@ -1,18 +1,22 @@
 ﻿# 余烬王冠 · 勇者文字冒险
 
-一个单文件网页文字冒险游戏（无后端、无外部依赖）。
+**在线游玩：https://xiaodyaoxx.github.io/ember-crown/**
 
-## 部署到 GitHub Pages
+一个单文件网页文字冒险游戏（无后端、无外部依赖、支持手机）。
 
-1. 登录 GitHub，右上角 + → New repository
-2. Repository name 填 `ember-crown`，选 **Public**，不要勾 README → Create repository
-3. 在新仓库页点 **uploading an existing file**，把本文件夹里的 `index.html` 拖进去 → Commit changes
-4. 仓库 Settings → 左侧 Pages → Source 选 **Deploy from a branch**
-   → Branch 选 `main`，目录选 `/(root)` → Save
-5. 等 1–2 分钟，访问 `https://<你的用户名>.github.io/ember-crown/`
+## 玩法
 
-## 注意
+- 鼠标点击选项，或按数字键 1–9；点击正文可跳过逐字显示
+- 战斗：普通攻击 / 重斩（7 MP）/ 治疗术（9 MP，Lv3 解锁）/ 火球术（10 MP，Lv5 解锁）/ 道具 / 逃跑（Boss 不能逃）
+- 倒下不会结束游戏，但会损失一半金币并在晨曦村醒来
+- 三种结局：黎明 / 灰烬 / 独行
+- 进度自动保存在浏览器 localStorage
 
-- 文件名必须保持 `index.html`，否则根路径会 404
-- 存档存在浏览器 localStorage 里，按域名隔离；换域名进度不通用
-- 手机上可「添加到主屏幕」，像 App 一样全屏运行
+## 本地运行
+
+直接用浏览器打开 `index.html` 即可。
+
+## 部署说明
+
+本站托管在 GitHub Pages（仓库 Settings → Pages，Source = Deploy from a branch，分支 main、目录 /）。
+修改 `index.html` 并提交后，约 1 分钟自动生效。
