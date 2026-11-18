@@ -1,0 +1,1389 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>余烬王冠 · 勇者文字冒险</title>
+<style>
+  :root{
+    --gold:#d9b16a; --gold-dim:#8a7043;
+    --ink:#0b0a09; --panel:rgba(26,21,17,.88); --panel2:rgba(38,30,23,.75);
+    --text:#e9dfcc; --dim:#9c8f7b;
+    --red:#b8453c; --blue:#4f7ea8; --green:#7d9b5a;
+  }
+  *{box-sizing:border-box}
+  html,body{height:100%}
+  body{
+    margin:0; color:var(--text);
+    font-family:"Noto Serif SC","Songti SC","STSong","SimSun",serif;
+    background:
+      radial-gradient(1100px 700px at 50% -10%, #33261a 0%, #171310 55%, #090807 100%);
+    background-attachment:fixed;
+  }
+  body::before{
+    content:""; position:fixed; inset:0; pointer-events:none; opacity:.35;
+    background-image:radial-gradient(rgba(255,255,255,.06) 1px, transparent 1px);
+    background-size:3px 3px;
+  }
+  #app{max-width:1120px;margin:0 auto;padding:20px 18px 40px;min-height:100vh;display:flex;flex-direction:column;gap:16px;position:relative}
+  .top{text-align:center;padding:8px 0 2px}
+  .top h1{
+    margin:0;font-size:30px;letter-spacing:.35em;font-weight:600;
+    color:var(--gold); text-shadow:0 0 24px rgba(217,177,106,.35), 0 2px 0 #000;
+  }
+  .top .sub{margin:8px 0 0;color:var(--dim);font-size:12.5px;letter-spacing:.28em}
+  .layout{display:grid;grid-template-columns:280px 1fr;gap:16px;flex:1;align-items:start}
+  .panel{
+    background:var(--panel); border:1px solid rgba(217,177,106,.28);
+    border-radius:6px; padding:16px 18px;
+    box-shadow:0 18px 40px rgba(0,0,0,.45), inset 0 0 60px rgba(0,0,0,.35);
+  }
+  /* ---------- HUD ---------- */
+  #hud{font-size:13.5px;position:sticky;top:16px}
+  .hud-name{font-size:17px;color:var(--gold);letter-spacing:.08em;display:flex;justify-content:space-between;align-items:baseline}
+  .hud-name .lv{font-size:12px;color:var(--dim);letter-spacing:0}
+  .hud-sec{margin-top:14px;border-top:1px dashed rgba(217,177,106,.2);padding-top:12px}
+  .hud-sec h3{margin:0 0 8px;font-size:11px;color:var(--dim);letter-spacing:.22em;font-weight:400}
+  .bar-row{display:grid;grid-template-columns:34px 1fr 62px;gap:8px;align-items:center;margin:7px 0;font-size:12px}
+  .bar-label{color:var(--dim)}
+  .bar{height:9px;background:#0a0807;border:1px solid rgba(255,255,255,.08);border-radius:2px;overflow:hidden}
+  .bar i{display:block;height:100%;transition:width .25s ease}
+  .bar i.hp{background:linear-gradient(90deg,#7d2a25,#c4514a)}
+  .bar i.mp{background:linear-gradient(90deg,#2b4a68,#5b8cbb)}
+  .bar i.xp{background:linear-gradient(90deg,#6b5a2a,#c8a55c)}
+  .bar-num{text-align:right;color:var(--dim);font-size:11.5px;font-variant-numeric:tabular-nums}
+  .stat-line{display:flex;justify-content:space-between;margin:4px 0;font-size:12.5px}
+  .stat-line span:last-child{color:var(--gold)}
+  .eq{display:flex;justify-content:space-between;font-size:12.5px;margin:4px 0}
+  .eq .dim{color:var(--dim)}
+  .tags{display:flex;flex-wrap:wrap;gap:6px;margin-top:4px}
+  .tag{font-size:11.5px;color:#e6d8bd;background:rgba(217,177,106,.1);border:1px solid rgba(217,177,106,.22);border-radius:3px;padding:2px 7px}
+  .dim{color:var(--dim)}
+  .poison-tag{color:#a9c47a}
+  /* ---------- stage ---------- */
+  .stage{min-height:520px;display:flex;flex-direction:column}
+  #sceneTitle{margin:0 0 14px;font-size:20px;color:var(--gold);letter-spacing:.12em;font-weight:600}
+  #text{flex:1;font-size:16px;line-height:2;white-space:pre-wrap;min-height:220px;max-height:420px;overflow-y:auto;padding-right:6px}
+  #text::-webkit-scrollbar{width:6px}
+  #text::-webkit-scrollbar-thumb{background:rgba(217,177,106,.25);border-radius:3px}
+  #choices{display:flex;flex-direction:column;gap:9px;margin-top:18px}
+  .choice{
+    text-align:left;cursor:pointer;font-family:inherit;font-size:14.5px;color:var(--text);
+    background:linear-gradient(180deg,rgba(58,46,34,.9),rgba(32,26,20,.9));
+    border:1px solid rgba(217,177,106,.28);border-radius:4px;padding:11px 14px;
+    display:flex;justify-content:space-between;gap:12px;align-items:center;
+    transition:.15s; position:relative;
+  }
+  .choice:hover{border-color:var(--gold);background:linear-gradient(180deg,rgba(88,68,44,.95),rgba(44,34,24,.95));transform:translateX(3px)}
+  .choice:active{transform:translateX(1px) scale(.995)}
+  .choice .cl::before{content:"▸ ";color:var(--gold-dim)}
+  .choice .ch{font-size:12px;color:var(--dim);white-space:nowrap}
+  .choice.disabled{opacity:.38;cursor:not-allowed;transform:none}
+  .choice.danger{border-color:rgba(184,69,60,.55)}
+  .choice.danger:hover{border-color:#d05a4f}
+  .choice.good{border-color:rgba(125,155,90,.45)}
+  .title-box{margin:6px 0 4px}
+  .title-box .lbl{display:block;font-size:12px;color:var(--dim);letter-spacing:.2em;margin-bottom:8px}
+  .title-box input{
+    width:100%;background:#0d0b09;border:1px solid rgba(217,177,106,.35);border-radius:4px;
+    color:var(--gold);font-family:inherit;font-size:16px;padding:10px 12px;outline:none;letter-spacing:.1em;
+  }
+  .title-box input:focus{border-color:var(--gold);box-shadow:0 0 0 3px rgba(217,177,106,.12)}
+  /* ---------- battle ---------- */
+  .ebar{position:relative;height:18px;background:#0a0807;border:1px solid rgba(184,69,60,.5);border-radius:3px;overflow:hidden;margin-bottom:6px}
+  .ebar-fill{height:100%;background:linear-gradient(90deg,#5e1f1b,#b8453c);transition:width .3s ease}
+  .ebar span{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-size:11px;letter-spacing:.1em;color:#f1e6d2;text-shadow:0 1px 2px #000}
+  .blog{margin-top:10px;font-size:14px;line-height:1.95}
+  .line{margin:2px 0}
+  .line.you{color:#e8dcc4}
+  .line.foe{color:#d99a92}
+  .line.good{color:#b8cf8a}
+  .line.bad{color:#e06b60}
+  .line.warn{color:var(--gold)}
+  .line.dim{color:var(--dim)}
+  /* ---------- footer ---------- */
+  .foot{display:flex;flex-wrap:wrap;gap:10px;align-items:center;justify-content:center}
+  .foot button{
+    font-family:inherit;font-size:12.5px;color:var(--dim);background:transparent;
+    border:1px solid rgba(217,177,106,.25);border-radius:3px;padding:7px 14px;cursor:pointer;transition:.15s;letter-spacing:.08em;
+  }
+  .foot button:hover{color:var(--gold);border-color:var(--gold)}
+  .toast{font-size:12.5px;color:var(--gold);min-height:18px;letter-spacing:.05em}
+  details.help{font-size:12.5px;color:var(--dim);max-width:760px;margin:0 auto}
+  details.help summary{cursor:pointer;letter-spacing:.12em;text-align:center}
+  details.help p{line-height:1.9;margin:8px 0 0;text-align:left}
+  @media (max-width:820px){
+    .layout{grid-template-columns:1fr}
+    #hud{position:static;order:2}
+    .top h1{font-size:23px;letter-spacing:.22em}
+    #text{max-height:none;font-size:15.5px}
+    .stage{min-height:auto}
+  }
+</style>
+</head>
+<body>
+<div id="app">
+  <header class="top">
+    <h1>余 烬 王 冠</h1>
+    <p class="sub">A TEXT ADVENTURE · 勇者文字冒险</p>
+  </header>
+
+  <div class="layout">
+    <aside id="hud" class="panel"></aside>
+    <main class="panel stage">
+      <h2 id="sceneTitle"></h2>
+      <div id="text"></div>
+      <div id="choices"></div>
+    </main>
+  </div>
+
+  <footer class="foot">
+    <button id="btnSave">保存进度</button>
+    <button id="btnLoad">读取进度</button>
+    <button id="btnRestart">重新开始</button>
+    <span id="toast" class="toast"></span>
+  </footer>
+
+  <details class="help">
+    <summary>玩法说明</summary>
+    <p>数字键 1-9 可直接选择选项；点击正文可跳过逐字显示。<br>
+    战斗中有四种手段：普通攻击、技能（随等级解锁）、道具、逃跑（Boss 不能逃）。<br>
+    倒下不会终结游戏，但会损失一半金币并在晨曦村醒来。<br>
+    进度保存在浏览器本地，换设备或清缓存会丢失。</p>
+  </details>
+</div>
+
+<script>
+'use strict';
+
+/* ================================================================
+   一、静态数据
+   ================================================================ */
+
+const ITEMS = {
+  heal: {
+    name: '治疗药水', price: 15, desc: '恢复 40 点生命',
+    use() {
+      if (S.hp >= maxHp()) return '你的生命已经满了。';
+      const before = S.hp;
+      S.hp = Math.min(maxHp(), S.hp + 40);
+      return '你喝下治疗药水，恢复了 ' + (S.hp - before) + ' 点生命。';
+    }
+  },
+  mana: {
+    name: '魔力药水', price: 20, desc: '恢复 25 点魔力',
+    use() {
+      if (S.mp >= maxMp()) return '你的魔力已经满了。';
+      const before = S.mp;
+      S.mp = Math.min(maxMp(), S.mp + 25);
+      return '你喝下魔力药水，恢复了 ' + (S.mp - before) + ' 点魔力。';
+    }
+  },
+  antidote: {
+    name: '解毒草', price: 10, desc: '解除中毒状态',
+    use() {
+      if (!S.poison) return '你并没有中毒。';
+      S.poison = null;
+      return '你嚼碎解毒草，毒素退去。';
+    }
+  },
+  bomb: {
+    name: '火焰炸弹', price: 30, desc: '战斗中对敌人造成 45 点伤害', battleOnly: true
+  }
+};
+
+const GEAR = {
+  ironSword: { name: '缺口铁剑', price: 0,   slot: 'weapon',  atk: 6,  desc: '攻击 +6' },
+  chainmail: { name: '锁子甲',   price: 90,  slot: 'armor',   def: 5,  desc: '防御 +5' },
+  amulet:    { name: '旅者护符', price: 140, slot: 'trinket', hp: 20, mp: 10, desc: '生命 +20 / 魔力 +10' },
+  silver:    { name: '银月护符', price: 0,   slot: 'trinket', hp: 30, mp: 20, desc: '生命 +30 / 魔力 +20' }
+};
+
+const SLOT_NAMES = { weapon: '武器', armor: '护甲', trinket: '饰品' };
+
+const ENEMIES = {
+  slime: {
+    name: '史莱姆', hp: 24, atk: 6, def: 0, exp: 14, gold: 6,
+    desc: '半透明的胶质怪物，正缓慢地蠕动。'
+  },
+  wolf: {
+    name: '迷雾狼', hp: 36, atk: 9, def: 2, exp: 22, gold: 9,
+    desc: '眼睛泛着幽绿的光，喉咙里滚出低吼。',
+    special: { name: '撕咬', chance: 0.3, mult: 1.4 }
+  },
+  goblin: {
+    name: '哥布林斥候', hp: 44, atk: 10, def: 3, exp: 26, gold: 13,
+    desc: '瘦小而狡诈，握着一把生锈的短刀。',
+    special: { name: '背刺', chance: 0.25, mult: 1.5 }
+  },
+  treant: {
+    name: '腐化树精', hp: 128, atk: 14, def: 4, exp: 70, gold: 45, boss: true,
+    desc: '树皮裂开，渗出黑色的汁液。它是森林的伤口。',
+    special: { name: '藤蔓缠绕', chance: 0.3, mult: 0.9, poison: { turns: 3, dmg: 4 } }
+  },
+  bat: {
+    name: '矿坑毒蝠', hp: 32, atk: 11, def: 2, exp: 24, gold: 11,
+    desc: '在黑暗里扑棱着翅膀，唾液带毒。',
+    special: { name: '毒牙', chance: 0.35, mult: 0.8, poison: { turns: 3, dmg: 5 } }
+  },
+  golem: {
+    name: '石魔像', hp: 168, atk: 15, def: 9, exp: 110, gold: 80, boss: true,
+    desc: '矿坑的守门者。它每走一步，地面都在颤抖。',
+    special: { name: '岩崩', chance: 0.3, mult: 1.6 }
+  },
+  skeleton: {
+    name: '灰烬骷髅', hp: 80, atk: 17, def: 6, exp: 45, gold: 26,
+    desc: '烧焦的骨架在灰烬里站起，眼眶里两点残火。',
+    special: { name: '灰烬斩', chance: 0.3, mult: 1.3 }
+  },
+  guard: {
+    name: '魔王卫兵', hp: 146, atk: 20, def: 8, exp: 90, gold: 60,
+    desc: '黑甲上刻着王冠纹章，长枪斜指地面。',
+    special: { name: '穿刺', chance: 0.3, mult: 1.5 }
+  },
+  warlord: {
+    name: '魔王·瓦洛斯', hp: 352, atk: 24, def: 11, exp: 0, gold: 0, boss: true, final: true,
+    desc: '王座之上，披着灰烬长袍的身影缓缓起身。',
+    special: { name: '暗焰', chance: 0.28, mult: 1.4, poison: { turns: 3, dmg: 6 } },
+    phase2: { atk: 31, def: 14, text: '瓦洛斯的袍子燃起黑焰——第二形态。' }
+  }
+};
+
+const POOLS = {
+  forest:    ['slime', 'wolf', 'goblin'],
+  cave:      ['bat', 'goblin', 'slime'],
+  wasteland: ['skeleton', 'wolf'],
+  castle:    ['guard', 'skeleton']
+};
+
+const SHOP = [
+  { kind: 'item', id: 'heal',     price: 15 },
+  { kind: 'item', id: 'mana',     price: 20 },
+  { kind: 'item', id: 'antidote', price: 10 },
+  { kind: 'item', id: 'bomb',     price: 30 },
+  { kind: 'gear', id: 'chainmail', price: 90 },
+  { kind: 'gear', id: 'amulet',    price: 140 }
+];
+
+const MERCHANT = [
+  { kind: 'item', id: 'heal', price: 20 },
+  { kind: 'item', id: 'mana', price: 25 },
+  { kind: 'item', id: 'bomb', price: 35 }
+];
+
+/* ================================================================
+   二、状态与派生属性
+   ================================================================ */
+
+let S = null;          // 玩家存档状态
+let battle = null;     // 当前战斗
+let typer = null;      // 打字机定时器
+let currentText = '';
+const SAVE_KEY = 'ember_crown_save_v1';
+
+function newHero(name) {
+  return {
+    name: name || '勇者',
+    level: 1, exp: 0,
+    hpBase: 60, mpBase: 20, atkBase: 8, defBase: 3,
+    hp: 60, mp: 20,
+    gold: 20,
+    bag: { heal: 1, mana: 0, antidote: 0, bomb: 0 },
+    gear: {},
+    equip: { weapon: null, armor: null, trinket: null },
+    flags: {},
+    scene: 'village',
+    poison: null
+  };
+}
+
+function gearBonus() {
+  const out = { atk: 0, def: 0, hp: 0, mp: 0 };
+  ['weapon', 'armor', 'trinket'].forEach(function (slot) {
+    const id = S.equip[slot];
+    if (!id || !GEAR[id]) return;
+    const g = GEAR[id];
+    out.atk += g.atk || 0;
+    out.def += g.def || 0;
+    out.hp += g.hp || 0;
+    out.mp += g.mp || 0;
+  });
+  return out;
+}
+function maxHp() { return S.hpBase + gearBonus().hp; }
+function maxMp() { return S.mpBase + gearBonus().mp; }
+function atk() { return S.atkBase + gearBonus().atk; }
+function def() { return S.defBase + gearBonus().def; }
+function expNeed() { return 30 + (S.level - 1) * 22; }
+
+function equip(id) {
+  const g = GEAR[id];
+  if (!g) return;
+  S.gear[id] = true;
+  S.equip[g.slot] = id;
+  S.hp = Math.min(S.hp, maxHp());
+  S.mp = Math.min(S.mp, maxMp());
+}
+
+/* ================================================================
+   三、工具
+   ================================================================ */
+
+function $(id) { return document.getElementById(id); }
+function esc(str) {
+  return String(str).replace(/[&<>"']/g, function (c) {
+    return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c];
+  });
+}
+function randInt(a, b) { return a + Math.floor(Math.random() * (b - a + 1)); }
+function clamp(v, a, b) { return Math.max(a, Math.min(b, v)); }
+
+function hit(attack, defense, mult) {
+  if (!mult) mult = 1;
+  const base = Math.max(1, attack * mult - defense * 0.5);
+  const crit = Math.random() < 0.1;
+  let dmg = base * (0.85 + Math.random() * 0.35);
+  if (crit) dmg *= 1.6;
+  return { dmg: Math.max(1, Math.round(dmg)), crit: crit };
+}
+
+let toastTimer = null;
+function toast(msg) {
+  const el = $('toast');
+  if (!el) return;
+  el.textContent = msg;
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(function () { el.textContent = ''; }, 2600);
+}
+
+/* ================================================================
+   四、存读档
+   ================================================================ */
+
+function save() {
+  if (!S) return;
+  try {
+    localStorage.setItem(SAVE_KEY, JSON.stringify({ v: 1, time: Date.now(), state: S }));
+  } catch (e) { /* 隐私模式下可能失败，忽略 */ }
+}
+function hasSave() {
+  try { return !!localStorage.getItem(SAVE_KEY); } catch (e) { return false; }
+}
+function load() {
+  try {
+    const raw = localStorage.getItem(SAVE_KEY);
+    if (!raw) return false;
+    const data = JSON.parse(raw);
+    if (!data || !data.state) return false;
+    const st = data.state;
+    if (typeof st.level !== 'number' || typeof st.hp !== 'number') return false;
+    S = st;
+    S.bag = st.bag || {};
+    S.gear = st.gear || {};
+    S.equip = st.equip || { weapon: null, armor: null, trinket: null };
+    S.flags = st.flags || {};
+    S.poison = st.poison || null;
+    if (!S.bag.heal) S.bag.heal = 0;
+    if (!S.bag.mana) S.bag.mana = 0;
+    if (!S.bag.antidote) S.bag.antidote = 0;
+    if (!S.bag.bomb) S.bag.bomb = 0;
+    if (!S.scene || !SCENES[S.scene]) S.scene = 'village';
+    return true;
+  } catch (e) { return false; }
+}
+function clearSave() {
+  try { localStorage.removeItem(SAVE_KEY); } catch (e) {}
+}
+
+/* ================================================================
+   五、渲染
+   ================================================================ */
+
+function render() {
+  if (!S) { showTitle(); return; }
+  renderHUD();
+  if (battle) renderBattle(); else renderScene();
+}
+
+function renderHUD() {
+  const hud = $('hud');
+  if (!S) {
+    hud.innerHTML = '<div class="dim" style="line-height:2">尚未开始冒险。<br>输入名字，然后出发。</div>';
+    return;
+  }
+  const hpPct = clamp(Math.round(S.hp / maxHp() * 100), 0, 100);
+  const mpPct = clamp(Math.round(S.mp / maxMp() * 100), 0, 100);
+  const xpPct = clamp(Math.round(S.exp / expNeed() * 100), 0, 100);
+
+  let bagHTML = '';
+  const bagKeys = Object.keys(ITEMS).filter(function (k) { return S.bag[k] > 0; });
+  bagHTML = bagKeys.length
+    ? bagKeys.map(function (k) { return '<span class="tag">' + ITEMS[k].name + ' ×' + S.bag[k] + '</span>'; }).join('')
+    : '<span class="dim">空</span>';
+
+  let eqHTML = '';
+  ['weapon', 'armor', 'trinket'].forEach(function (slot) {
+    const id = S.equip[slot];
+    eqHTML += '<div class="eq"><span class="dim">' + SLOT_NAMES[slot] + '</span><span>' +
+      (id && GEAR[id] ? GEAR[id].name : '—') + '</span></div>';
+  });
+
+  hud.innerHTML =
+    '<div class="hud-name"><span>' + esc(S.name) + '</span><span class="lv">Lv.' + S.level + '</span></div>' +
+    '<div class="bar-row"><span class="bar-label">生命</span><div class="bar"><i class="hp" style="width:' + hpPct + '%"></i></div><span class="bar-num">' + Math.max(0, S.hp) + '/' + maxHp() + '</span></div>' +
+    '<div class="bar-row"><span class="bar-label">魔力</span><div class="bar"><i class="mp" style="width:' + mpPct + '%"></i></div><span class="bar-num">' + Math.max(0, S.mp) + '/' + maxMp() + '</span></div>' +
+    '<div class="bar-row"><span class="bar-label">经验</span><div class="bar"><i class="xp" style="width:' + xpPct + '%"></i></div><span class="bar-num">' + S.exp + '/' + expNeed() + '</span></div>' +
+    (S.poison ? '<div class="hud-sec"><span class="poison-tag">☠ 中毒（' + S.poison.t + ' 回合，每回合 ' + S.poison.d + '）</span></div>' : '') +
+    '<div class="hud-sec"><h3>属性</h3>' +
+      '<div class="stat-line"><span>攻击</span><span>' + atk() + '</span></div>' +
+      '<div class="stat-line"><span>防御</span><span>' + def() + '</span></div>' +
+      '<div class="stat-line"><span>金币</span><span>' + S.gold + '</span></div>' +
+    '</div>' +
+    '<div class="hud-sec"><h3>装备</h3>' + eqHTML + '</div>' +
+    '<div class="hud-sec"><h3>背包</h3><div class="tags">' + bagHTML + '</div></div>';
+}
+
+function addChoice(parent, label, hint, fn, opts) {
+  opts = opts || {};
+  const b = document.createElement('button');
+  b.className = 'choice' + (opts.cls ? ' ' + opts.cls : '') + (opts.disabled ? ' disabled' : '');
+  b.innerHTML = '<span class="cl">' + esc(label) + '</span>' +
+    (hint ? '<span class="ch">' + esc(hint) + '</span>' : '');
+  if (opts.disabled) b.disabled = true;
+  else b.onclick = fn;
+  parent.appendChild(b);
+}
+
+function typeText(str) {
+  const el = $('text');
+  clearInterval(typer);
+  typer = null;
+  currentText = str;
+  el.textContent = '';
+  const chars = Array.from(str);
+  let i = 0;
+  typer = setInterval(function () {
+    i += 1;
+    el.textContent = chars.slice(0, i).join('');
+    if (i >= chars.length) { clearInterval(typer); typer = null; }
+  }, 16);
+}
+
+function skipTyping() {
+  if (typer) {
+    clearInterval(typer);
+    typer = null;
+    $('text').textContent = currentText;
+  }
+}
+
+function renderScene() {
+  const sc = SCENES[S.scene] || SCENES.village;
+  $('sceneTitle').textContent = sc.title;
+  const body = typeof sc.text === 'function' ? sc.text(S) : sc.text;
+  typeText(body);
+
+  const box = $('choices');
+  box.innerHTML = '';
+  const list = (typeof sc.choices === 'function' ? sc.choices(S) : sc.choices) || [];
+  list.forEach(function (c) {
+    if (c.if && !c.if(S)) return;
+    addChoice(box, c.label, c.hint, function () {
+      if (c.go) return goScene(c.go);
+      if (c.run) return c.run(S);
+    }, { disabled: !!c.disabled, cls: c.cls });
+  });
+}
+
+function renderBattle() {
+  const b = battle;
+  clearInterval(typer);
+  typer = null;
+  $('sceneTitle').textContent = b.e.name + (b.e.boss ? ' · BOSS' : '');
+  const pct = clamp(Math.round(b.hp / b.maxHp * 100), 0, 100);
+  const lines = b.log.slice(-14).map(function (x) {
+    return '<div class="line ' + (x.c || '') + '">' + x.m + '</div>';
+  }).join('');
+  $('text').innerHTML =
+    '<div class="ebar"><div class="ebar-fill" style="width:' + pct + '%"></div><span>' +
+    Math.max(0, b.hp) + ' / ' + b.maxHp + '</span></div>' +
+    '<div class="blog">' + lines + '</div>';
+  const textEl = $('text');
+  textEl.scrollTop = textEl.scrollHeight;
+
+  const box = $('choices');
+  box.innerHTML = '';
+
+  if (b.over) {
+    const label = b.won ? '继续前进' : '……';
+    addChoice(box, label, '', function () { leaveBattle(); });
+    return;
+  }
+
+  const busy = b.busy;
+  addChoice(box, '普通攻击', '不消耗魔力', function () { playerAct('attack'); }, { disabled: busy });
+
+  if (S.level >= 1) {
+    addChoice(box, '重斩', '7 MP · 强力一击', function () { playerAct('skill', 'heavy'); }, { disabled: busy || S.mp < 7 });
+  }
+  if (S.level >= 3) {
+    addChoice(box, '治疗术', '9 MP · 恢复生命', function () { playerAct('skill', 'heal'); }, { disabled: busy || S.mp < 9 });
+  }
+  if (S.level >= 5) {
+    addChoice(box, '火球术', '10 MP · 灼烧', function () { playerAct('skill', 'fire'); }, { disabled: busy || S.mp < 10 });
+  }
+
+  ['heal', 'mana', 'antidote', 'bomb'].forEach(function (k) {
+    if (!S.bag[k] || S.bag[k] <= 0) return;
+    addChoice(box, ITEMS[k].name + ' ×' + S.bag[k], ITEMS[k].desc, function () {
+      playerAct('item', k);
+    }, { disabled: busy });
+  });
+
+  if (!b.e.boss) {
+    addChoice(box, '逃跑', '50% 成功率', function () { playerAct('flee'); }, { disabled: busy, cls: 'danger' });
+  }
+}
+
+/* ================================================================
+   六、场景
+   ================================================================ */
+
+function goScene(id) {
+  const sc = SCENES[id];
+  if (!sc) return;
+  battle = null;
+  S.scene = id;
+  S.poison = null;
+  save();
+  render();
+}
+
+function encounter(poolName, nextScene) {
+  const pool = POOLS[poolName] || POOLS.forest;
+  if (Math.random() < 0.65) {
+    const id = pool[randInt(0, pool.length - 1)];
+    startBattle(id, { onWin: function () { goScene(nextScene); } });
+  } else {
+    toast('这一次，路上什么也没有。');
+    goScene(nextScene);
+  }
+}
+
+function buyItem(kind, id, price) {
+  if (S.gold < price) { toast('金币不够。'); return; }
+  if (kind === 'gear') {
+    const slot = GEAR[id].slot;
+    if (S.gear[id]) { toast('你已经拥有了。'); return; }
+    if (S.equip[slot]) {
+      toast('「' + SLOT_NAMES[slot] + '」已经装着「' + GEAR[S.equip[slot]].name + '」了。');
+      return;
+    }
+    S.gold -= price;
+    equip(id);
+    toast('获得并装备了 ' + GEAR[id].name + '。');
+  } else {
+    S.gold -= price;
+    S.bag[id] = (S.bag[id] || 0) + 1;
+    toast('获得 ' + ITEMS[id].name + ' ×1。');
+  }
+  save();
+  render();
+}
+
+const SCENES = {
+  /* ---------------- 晨曦村 ---------------- */
+  village: {
+    title: '晨曦村',
+    text: function (s) {
+      let t = '广场上的钟停在三年零四个月之前。烟囱里没有烟，只有冷灰。\n' +
+        '你把那柄缺口铁剑别在腰上——它很轻，像一句没说完的承诺。';
+      if (s.flags.metElder) t += '\n\n村长靠在门框上抽着旱烟，冲你点了点头。';
+      return t;
+    },
+    choices: function (s) {
+      const list = [];
+      if (!s.flags.metElder) {
+        list.push({
+          label: '与村长交谈', hint: '主线', cls: 'good',
+          run: function () {
+            s.flags.metElder = true;
+            equip('ironSword');
+            s.bag.heal += 3;
+            goScene('elder');
+          }
+        });
+      }
+      list.push({ label: '去杂货铺', hint: '补给 / 装备', go: 'shop' });
+      list.push({ label: '在旅店休息', hint: '10 金币 · 回满状态', go: 'inn' });
+      list.push({ label: '前往迷雾森林', hint: '主线', go: 'forest_edge' });
+      return list;
+    }
+  },
+
+  elder: {
+    title: '村长的托付',
+    text: '村长咳嗽了两声，把一只旧布包推到你面前。\n\n' +
+      '「三十年前，我也走过那条路。」他说，「王冠碎在王座前，碎片散在森林、矿坑和荒原。\n' +
+      '拿好你的剑。别死在半路上——至少别死在第一段路上。」\n\n' +
+      '布包里是一柄缺口铁剑，和三瓶治疗药水。',
+    choices: function () {
+      return [{ label: '收下，出发', hint: '回到村口', go: 'village' }];
+    }
+  },
+
+  shop: {
+    title: '杂货铺',
+    text: function (s) {
+      return '木门吱呀作响。老板娘头也不抬：「要什么？先说好，赊账免谈。」\n\n' +
+        '你身上有 ' + s.gold + ' 枚金币。';
+    },
+    choices: function (s) {
+      return SHOP.map(function (it) {
+        const isGear = it.kind === 'gear';
+        const name = isGear ? GEAR[it.id].name : ITEMS[it.id].name;
+        const desc = isGear ? GEAR[it.id].desc : ITEMS[it.id].desc;
+        const owned = isGear && !!s.gear[it.id];
+        return {
+          label: name + ' · ' + it.price + ' 金',
+          hint: owned ? '已拥有' : desc,
+          disabled: owned || s.gold < it.price,
+          run: function () { buyItem(it.kind, it.id, it.price); }
+        };
+      }).concat([{ label: '离开杂货铺', go: 'village' }]);
+    }
+  },
+
+  inn: {
+    title: '旅店',
+    text: '壁炉里的火还亮着。老板擦着一只永远擦不干净的杯子。\n\n' +
+      '「十枚金币，睡到天亮。」他顿了顿，「或者免费听我讲个故事。」',
+    choices: function (s) {
+      return [
+        {
+          label: '付 10 金币休息', hint: '生命与魔力回满',
+          disabled: s.gold < 10,
+          run: function () {
+            s.gold -= 10;
+            s.hp = maxHp();
+            s.mp = maxMp();
+            s.poison = null;
+            toast('你睡了一觉，状态回满。');
+            save();
+            goScene('inn');
+          }
+        },
+        {
+          label: '听他讲故事', hint: '免费 · 也许有用',
+          run: function () {
+            const tales = [
+              '「魔王的第一形态怕火。第二形态……怕的是你不慌。」',
+              '「石魔像不躲不闪。你要做的不是快，是稳。」',
+              '「灰烬荒原上，别信任何会说话的东西——包括商人。」',
+              '「银月护符能挡住暗焰。可惜那东西，只在死人身上见过。」'
+            ];
+            toast(tales[randInt(0, tales.length - 1)]);
+          }
+        },
+        { label: '回村口', go: 'village' }
+      ];
+    }
+  },
+
+  /* ---------------- 迷雾森林 ---------------- */
+  forest_edge: {
+    title: '迷雾森林 · 入口',
+    text: '雾像湿透的棉布，贴在脸上。脚下的路分不清是兽径还是人踩出来的。\n' +
+      '再往里，连鸟叫都没有了。',
+    choices: function (s) {
+      const list = [
+        {
+          label: '深入迷雾森林', hint: '可能遭遇战斗',
+          run: function () { encounter('forest', 'forest_deep'); }
+        }
+      ];
+      if (!s.flags.herbs) {
+        list.push({
+          label: '采集草药', hint: '一次性 · 获得 2 瓶治疗药水',
+          run: function () {
+            s.flags.herbs = true;
+            s.bag.heal += 2;
+            toast('你采到两株止血草，换成了药水。');
+            save();
+            goScene('forest_edge');
+          }
+        });
+      }
+      list.push({ label: '返回晨曦村', go: 'village' });
+      return list;
+    }
+  },
+
+  forest_deep: {
+    title: '迷雾森林 · 深处',
+    text: function (s) {
+      if (!s.flags.treantDead) {
+        return '越往里，树越像人。你听见树皮底下有缓慢的心跳声。\n\n' +
+          '有什么东西，正挡在路中央。';
+      }
+      return '腐化树精倒下了，森林的呼吸轻了一些。\n' +
+        '前方，一道矿坑入口像张开的嘴。';
+    },
+    choices: function (s) {
+      const list = [];
+      if (!s.flags.treantDead) {
+        list.push({
+          label: '迎战腐化树精', hint: 'BOSS', cls: 'danger',
+          run: function () {
+            startBattle('treant', {
+              onWin: function () {
+                s.flags.treantDead = true;
+                toast('森林安静下来了。');
+                goScene('forest_deep');
+              }
+            });
+          }
+        });
+      }
+      if (!s.flags.elfResolved) {
+        list.push({
+          label: '去看看那个受伤的人', hint: '支线', go: 'elf'
+        });
+      }
+      if (s.flags.treantDead) {
+        list.push({ label: '走向矿坑入口', hint: '主线', go: 'cave_entrance' });
+      }
+      list.push({ label: '返回森林入口', go: 'forest_edge' });
+      return list;
+    }
+  },
+
+  elf: {
+    title: '白桦树下的信使',
+    text: '一棵倒下的白桦旁靠着个人影。尖耳、银发、小腿上插着一支黑羽箭。\n\n' +
+      '他抬起头，喘得很轻：「……人类。你也是去找瓦洛斯的？」\n' +
+      '「我的行囊里有样东西。救我，它就归你。」',
+    choices: function (s) {
+      return [
+        {
+          label: '用治疗药水救他', hint: '消耗 1 瓶治疗药水',
+          disabled: s.bag.heal <= 0,
+          cls: 'good',
+          run: function () {
+            s.bag.heal -= 1;
+            s.flags.savedElf = true;
+            s.flags.elfResolved = true;
+            equip('silver');
+            goScene('elf_saved');
+          }
+        },
+        {
+          label: '搜他的行囊', hint: '获得 45 金币', cls: 'danger',
+          run: function () {
+            s.gold += 45;
+            s.flags.greedy = true;
+            s.flags.elfResolved = true;
+            goScene('elf_looted');
+          }
+        },
+        {
+          label: '转身离开', hint: '什么也不发生',
+          run: function () {
+            s.flags.elfResolved = true;
+            goScene('forest_deep');
+          }
+        }
+      ];
+    }
+  },
+
+  elf_saved: {
+    title: '银月护符',
+    text: '药水灌下去，他的呼吸慢慢稳了。\n\n' +
+      '「我叫伊瑟。」他从行囊里摸出一枚银色的护符，塞进你手里，\n' +
+      '「瓦洛斯不只有一副面孔。等他烧起来的时候，护住心口。」\n\n' +
+      '他站起身，一瘸一拐地消失在雾里。',
+    choices: function () { return [{ label: '继续赶路', go: 'forest_deep' }]; }
+  },
+
+  elf_looted: {
+    title: '行囊',
+    text: '行囊里有一些干粮、一张地图，和 45 枚金币。\n\n' +
+      '他没有再看你。雾很快把两个人一起吞掉了。',
+    choices: function () { return [{ label: '继续赶路', go: 'forest_deep' }]; }
+  },
+
+  /* ---------------- 废弃矿坑 ---------------- */
+  cave_entrance: {
+    title: '废弃矿坑 · 入口',
+    text: '铁轨锈成了暗红色。风从深处吹出来，带着铁锈和腐肉的味道。\n\n' +
+      '你听见翅膀扑棱的声音，一闪就没了。',
+    choices: function (s) {
+      const list = [
+        {
+          label: '举着火把深入', hint: '可能遭遇战斗',
+          run: function () { encounter('cave', 'cave_deep'); }
+        }
+      ];
+      if (!s.flags.cartLooted) {
+        list.push({
+          label: '搜刮翻倒的矿车', hint: '一次性 · 金币',
+          run: function () {
+            s.flags.cartLooted = true;
+            const g = randInt(30, 60);
+            s.gold += g;
+            toast('你在矿车里翻出 ' + g + ' 枚金币。');
+            save();
+            goScene('cave_entrance');
+          }
+        });
+      }
+      if (!s.flags.graveLooted) {
+        list.push({
+          label: '翻找矿工的遗物', hint: '一次性 · 一笔不义之财', cls: 'danger',
+          run: function () {
+            s.flags.graveLooted = true;
+            s.flags.greedy = true;
+            const g = randInt(50, 80);
+            s.gold += g;
+            toast('你从遗骸上摸走了 ' + g + ' 枚金币。');
+            save();
+            goScene('cave_entrance');
+          }
+        });
+      }
+      list.push({ label: '返回迷雾森林', go: 'forest_deep' });
+      return list;
+    }
+  },
+
+  cave_deep: {
+    title: '矿坑 · 铁门之后',
+    text: function (s) {
+      if (!s.flags.golemDead) {
+        return '铁门后的空间大得不像矿坑。中央立着一尊石像，高得看不见头。\n\n' +
+          '你走近时，它的手指动了一下。';
+      }
+      return '石魔像碎成一地石块。它的胸腔里，一枚刻着王冠的铜牌还在发烫。\n\n' +
+        '更深处，有一条向上的地道，风里有灰的味道。';
+    },
+    choices: function (s) {
+      const list = [];
+      if (!s.flags.golemDead) {
+        list.push({
+          label: '迎战石魔像', hint: 'BOSS', cls: 'danger',
+          run: function () {
+            startBattle('golem', {
+              onWin: function () {
+                s.flags.golemDead = true;
+                s.flags.proof = true;
+                toast('获得「勇者之证」。');
+                goScene('cave_deep');
+              }
+            });
+          }
+        });
+      } else {
+        list.push({ label: '穿过地道 · 前往灰烬荒原', hint: '主线', go: 'wasteland' });
+      }
+      list.push({ label: '返回矿坑入口', go: 'cave_entrance' });
+      return list;
+    }
+  },
+
+  /* ---------------- 灰烬荒原 ---------------- */
+  wasteland: {
+    title: '灰烬荒原',
+    text: '荒原上没有影子。灰烬落进领口，像细小的针。\n\n' +
+      '远处，黑曜石的尖顶刺进云里。那就是魔王城。',
+    choices: function (s) {
+      const list = [
+        {
+          label: '穿越荒原', hint: '可能遭遇战斗',
+          run: function () { encounter('wasteland', 'wasteland'); }
+        },
+        { label: '与流浪商人交易', hint: '补给', go: 'merchant' }
+      ];
+      if (s.flags.proof) {
+        list.push({ label: '走向魔王城', hint: '最终区域', cls: 'danger', go: 'castle_gate' });
+      } else {
+        list.push({
+          label: '走向魔王城', hint: '需要「勇者之证」', disabled: true, run: function () {}
+        });
+      }
+      list.push({ label: '回矿坑', go: 'cave_deep' });
+      return list;
+    }
+  },
+
+  merchant: {
+    title: '流浪商人',
+    text: function (s) {
+      return '一个人裹着三层斗篷，坐在一只倒扣的木箱上。\n\n' +
+        '「荒原上只有两种人，」他说，「死人和做生意的人。」\n\n' +
+        '你身上有 ' + s.gold + ' 枚金币。';
+    },
+    choices: function (s) {
+      return MERCHANT.map(function (it) {
+        return {
+          label: ITEMS[it.id].name + ' · ' + it.price + ' 金',
+          hint: ITEMS[it.id].desc,
+          disabled: s.gold < it.price,
+          run: function () { buyItem(it.kind, it.id, it.price); }
+        };
+      }).concat([{ label: '离开', go: 'wasteland' }]);
+    }
+  },
+
+  /* ---------------- 魔王城 ---------------- */
+  castle_gate: {
+    title: '魔王城 · 城门',
+    text: '城门没有关。它在等你。\n\n' +
+      '门楣上刻满了名字，一层压着一层。最新的那个还沾着血。',
+    choices: function (s) {
+      return [
+        {
+          label: '踏入王座厅', hint: '最终决战',
+          cls: 'danger',
+          run: function () {
+            if (!s.flags.guardDead) {
+              startBattle('guard', {
+                onWin: function () {
+                  s.flags.guardDead = true;
+                  goScene('throne');
+                }
+              });
+            } else {
+              goScene('throne');
+            }
+          }
+        },
+        { label: '退回去整备', go: 'wasteland' }
+      ];
+    }
+  },
+
+  throne: {
+    title: '王座厅',
+    text: '地面铺满碎玻璃——那是王冠的碎片。\n\n' +
+      '瓦洛斯坐在王座上，脚下是熄灭的太阳纹章。\n' +
+      '「又一个勇者。」他笑，「上一个的名字，还刻在门楣上。」\n\n' +
+      '他站了起来。整座大厅的温度骤然下沉。',
+    choices: function (s) {
+      const list = [
+        {
+          label: '举起剑', hint: '最终 BOSS · 无法逃跑', cls: 'danger',
+          run: function () {
+            startBattle('warlord', {
+              onWin: function () { goScene(endingScene(s)); }
+            });
+          }
+        }
+      ];
+      if (s.flags.savedElf) {
+        list.push({
+          label: '握紧银月护符', hint: '伊瑟的话',
+          if: function (st) { return !st.flags.usedCharm; },
+          run: function () {
+            s.flags.usedCharm = true;
+            toast('护符在你掌心发烫。');
+          }
+        });
+      }
+      list.push({ label: '后退', go: 'castle_gate' });
+      return list;
+    }
+  },
+
+  /* ---------------- 结局 ---------------- */
+  ending_dawn: {
+    title: '结局 · 黎明',
+    text: function (s) {
+      return '黑焰熄灭的时候，你听见很远的地方有鸟叫。\n\n' +
+        '瓦洛斯的身体化作灰，灰里浮起一枚王冠的碎片——只有指甲盖大小。\n' +
+        '你把它带回晨曦村。村长捧着它，手抖得厉害：\n' +
+        '「王冠碎了不要紧。人还在，就好。」\n\n' +
+        '那天夜里，村里的烟囱第一次重新冒烟。\n\n' +
+        '—— 通关 ——\n' +
+        '等级 ' + s.level + ' · 金币 ' + s.gold + ' · 结局：黎明';
+    },
+    choices: function () { return [{ label: '再玩一次', hint: '从头开始', run: function () { restart(); } }]; }
+  },
+
+  ending_gray: {
+    title: '结局 · 灰烬',
+    text: function (s) {
+      return '伊瑟活了下来。可你带走的东西太多了——\n' +
+        '矿工的遗物、王座的金子、还有那顶本该被熔掉的王冠。\n\n' +
+        '回村的路上，银月护符一直冰凉，像块吸饱了夜色的石头。\n' +
+        '村长看了你很久，什么也没说。\n\n' +
+        '—— 通关 ——\n' +
+        '等级 ' + s.level + ' · 金币 ' + s.gold + ' · 结局：灰烬';
+    },
+    choices: function () { return [{ label: '再玩一次', hint: '从头开始', run: function () { restart(); } }]; }
+  },
+
+  ending_alone: {
+    title: '结局 · 独行',
+    text: function (s) {
+      return '你独自走出魔王城。身后没有欢呼，只有风。\n\n' +
+        '晨曦村的灯还亮着，但你已经不知道该跟谁说这一路的事。\n' +
+        '勇者回来了，故事却没有结尾。\n\n' +
+        '—— 通关 ——\n' +
+        '等级 ' + s.level + ' · 金币 ' + s.gold + ' · 结局：独行';
+    },
+    choices: function () { return [{ label: '再玩一次', hint: '从头开始', run: function () { restart(); } }]; }
+  }
+};
+
+function endingScene(s) {
+  if (s.flags.savedElf) return s.flags.greedy ? 'ending_gray' : 'ending_dawn';
+  return 'ending_alone';
+}
+
+/* ================================================================
+   七、战斗
+   ================================================================ */
+
+function addLog(msg, cls) {
+  if (!battle) return;
+  battle.log.push({ m: msg, c: cls || '' });
+}
+
+function startBattle(id, opts) {
+  const base = ENEMIES[id];
+  if (!base) return;
+  battle = {
+    id: id,
+    e: base,
+    hp: base.hp,
+    maxHp: base.hp,
+    atk: base.atk,
+    def: base.def,
+    log: [],
+    busy: false,
+    over: false,
+    won: false,
+    p2: false,
+    opts: opts || {}
+  };
+  addLog('⚔ ' + base.name + ' 出现了！', 'warn');
+  addLog(base.desc, 'dim');
+  render();
+}
+
+function applyPoison(p) {
+  if (!p) return;
+  S.poison = { t: p.turns, d: p.dmg };
+  addLog('你中毒了（' + p.turns + ' 回合，每回合 ' + p.dmg + '）。', 'bad');
+}
+
+function playerAct(kind, key) {
+  if (!battle || battle.busy || battle.over) return;
+  battle.busy = true;
+
+  if (kind === 'attack') {
+    const r = hit(atk(), battle.def, 1);
+    battle.hp -= r.dmg;
+    addLog('你挥剑攻击，造成 ' + r.dmg + ' 点伤害' + (r.crit ? '（暴击！）' : '') + '。', 'you');
+    return afterPlayerAction();
+  }
+
+  if (kind === 'skill') {
+    if (key === 'heavy') {
+      if (S.mp < 7) return actionFail('魔力不足。');
+      S.mp -= 7;
+      const r = hit(atk(), battle.def * 0.6, 1.8);
+      battle.hp -= r.dmg;
+      addLog('你使出一记重斩，造成 ' + r.dmg + ' 点伤害' + (r.crit ? '（暴击！）' : '') + '。', 'you');
+    } else if (key === 'heal') {
+      if (S.mp < 9) return actionFail('魔力不足。');
+      if (S.hp >= maxHp()) return actionFail('生命已满，不必治疗。');
+      S.mp -= 9;
+      const amount = 30 + S.level * 6;
+      S.hp = Math.min(maxHp(), S.hp + amount);
+      addLog('你念动治疗术，恢复了 ' + amount + ' 点生命。', 'good');
+    } else if (key === 'fire') {
+      if (S.mp < 10) return actionFail('魔力不足。');
+      S.mp -= 10;
+      const r = hit(atk() + 8, battle.def * 0.2, 1.15);
+      battle.hp -= r.dmg;
+      addLog('火球在' + battle.e.name + '身上炸开，造成 ' + r.dmg + ' 点伤害。', 'you');
+    } else {
+      return actionFail('未知技能。');
+    }
+    return afterPlayerAction();
+  }
+
+  if (kind === 'item') {
+    if (!S.bag[key] || S.bag[key] <= 0) return actionFail('你没有这个道具。');
+    if (key === 'bomb') {
+      S.bag.bomb -= 1;
+      battle.hp -= 45;
+      addLog('你投出火焰炸弹，造成 45 点伤害。', 'you');
+      return afterPlayerAction();
+    }
+    if (key === 'antidote' && !S.poison) return actionFail('你并没有中毒。');
+    if (key === 'heal' && S.hp >= maxHp()) return actionFail('生命已满，不必浪费药水。');
+    if (key === 'mana' && S.mp >= maxMp()) return actionFail('魔力已满，不必浪费药水。');
+    const msg = ITEMS[key].use();
+    S.bag[key] -= 1;
+    addLog(msg, 'good');
+    return afterPlayerAction();
+  }
+
+  if (kind === 'flee') {
+    if (battle.e.boss) return actionFail('Boss 战无法逃跑。');
+    if (Math.random() < 0.5) {
+      battle.over = true;
+      battle.won = false;
+      battle.fled = true;
+      addLog('你转身逃进了雾里。', 'dim');
+      renderBattle();
+      return;
+    }
+    addLog('你试图逃跑，却被拦了回来。', 'dim');
+    return afterPlayerAction();
+  }
+}
+
+function actionFail(msg) {
+  battle.busy = false;
+  addLog(msg, 'dim');
+  renderBattle();
+}
+
+function afterPlayerAction() {
+  if (battle.hp <= 0) return victory();
+  checkPhase();
+  battle.busy = true;
+  renderBattle();
+  setTimeout(enemyTurn, 750);
+}
+
+function checkPhase() {
+  const e = battle.e;
+  if (!e.phase2 || battle.p2) return;
+  if (battle.hp <= battle.maxHp * 0.5) {
+    battle.p2 = true;
+    battle.atk = e.phase2.atk;
+    battle.def = e.phase2.def;
+    addLog(e.phase2.text, 'warn');
+  }
+}
+
+function enemyTurn() {
+  if (!battle || battle.over) return;
+  const e = battle.e;
+  const sp = e.special;
+  const useSpecial = sp && Math.random() < sp.chance;
+  let mult = useSpecial ? (sp.mult || 1) : 1;
+
+  if (useSpecial && battle.id === 'warlord' && S.flags.usedCharm) {
+    mult *= 0.6;
+    addLog('银月护符亮起，暗焰被护住了大半。', 'good');
+  }
+
+  const r = hit(battle.atk, def(), mult);
+  S.hp -= r.dmg;
+  addLog(e.name + (useSpecial ? '使出「' + sp.name + '」，' : '发起攻击，') +
+    '造成 ' + r.dmg + ' 点伤害' + (r.crit ? '（暴击！）' : '') + '。', 'foe');
+
+  if (useSpecial && sp.poison) applyPoison(sp.poison);
+
+  if (S.poison) {
+    S.hp -= S.poison.d;
+    addLog('毒素侵蚀，你失去 ' + S.poison.d + ' 点生命。', 'bad');
+    S.poison.t -= 1;
+    if (S.poison.t <= 0) {
+      S.poison = null;
+      addLog('毒素消退了。', 'dim');
+    }
+  }
+
+  if (S.hp <= 0) return defeatInBattle();
+
+  battle.busy = false;
+  render();
+}
+
+function gainExp(amount) {
+  S.exp += amount;
+  addLog('获得 ' + amount + ' 点经验。', 'good');
+  while (S.exp >= expNeed()) {
+    S.exp -= expNeed();
+    levelUp();
+  }
+}
+
+function levelUp() {
+  S.level += 1;
+  S.hpBase += 18;
+  S.mpBase += 6;
+  S.atkBase += 3;
+  S.defBase += 2;
+  S.hp = Math.min(maxHp(), S.hp + Math.round(maxHp() * 0.35));
+  S.mp = Math.min(maxMp(), S.mp + 10);
+  addLog('★ 升到 Lv.' + S.level + '！生命上限 +18，攻击 +3，防御 +2。', 'warn');
+}
+
+function victory() {
+  battle.over = true;
+  battle.won = true;
+  battle.busy = true;
+  battle.hp = 0;
+  const e = battle.e;
+  addLog('你击败了' + e.name + '！', 'good');
+  if (e.gold) {
+    S.gold += e.gold;
+    addLog('获得 ' + e.gold + ' 枚金币。', 'good');
+  }
+  if (e.exp) gainExp(e.exp);
+  S.poison = null;
+  save();
+  render();
+}
+
+function defeatInBattle() {
+  battle.over = true;
+  battle.won = false;
+  battle.lost = true;
+  S.hp = 0;
+  addLog('你的视线暗了下去……', 'bad');
+  render();
+}
+
+function leaveBattle() {
+  const b = battle;
+  if (!b) return;
+  const fled = b.fled;
+  const lost = b.lost;
+  const onWin = b.opts && b.opts.onWin;
+  battle = null;
+  S.poison = null;
+
+  if (lost) {
+    const penalty = Math.floor(S.gold / 2);
+    S.gold -= penalty;
+    S.hp = Math.max(1, Math.floor(maxHp() * 0.5));
+    S.mp = maxMp();
+    toast('你在晨曦村的床上醒来，失去了 ' + penalty + ' 枚金币。');
+    S.scene = 'village';
+    save();
+    render();
+    return;
+  }
+  if (fled) {
+    toast('你逃掉了。');
+    save();
+    render();
+    return;
+  }
+  if (onWin) { onWin(); return; }
+  save();
+  render();
+}
+
+/* ================================================================
+   八、开始界面 / 生命周期
+   ================================================================ */
+
+function showTitle() {
+  clearInterval(typer);
+  typer = null;
+  $('sceneTitle').textContent = '余烬王冠';
+  typeText(
+    '魔王军的黑烟吞没了边境。\n' +
+    '晨曦村外，迷雾森林在低语；废矿深处，有什么东西在呼吸。\n\n' +
+    '村长把一柄缺口铁剑塞进你手里：\n' +
+    '「孩子，王冠碎了，可路还在。」\n\n' +
+    '—— 你叫什么名字？'
+  );
+
+  const box = $('choices');
+  box.innerHTML = '';
+
+  const wrap = document.createElement('div');
+  wrap.className = 'title-box';
+  wrap.innerHTML = '<span class="lbl">勇 者 之 名</span>' +
+    '<input id="heroName" maxlength="12" value="勇者" autocomplete="off">';
+  box.appendChild(wrap);
+
+  addChoice(box, '开始新的冒险', '踏上通往魔王城的路', function () {
+    const input = $('heroName');
+    let name = input ? input.value.trim() : '勇者';
+    if (!name) name = '勇者';
+    if (name.length > 12) name = name.slice(0, 12);
+    startGame(name);
+  }, { cls: 'good' });
+
+  if (hasSave()) {
+    addChoice(box, '继续上次的冒险', '读取本地存档', function () {
+      if (load()) { battle = null; render(); toast('欢迎回来，' + S.name + '。'); }
+      else toast('存档读取失败。');
+    });
+  }
+}
+
+function startGame(name) {
+  S = newHero(name);
+  battle = null;
+  clearSave();
+  save();
+  goScene('village');
+  toast('冒险开始了。');
+}
+
+function restart() {
+  clearSave();
+  S = null;
+  battle = null;
+  showTitle();
+}
+
+function onKey(e) {
+  if (e.target && (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA')) {
+    if (e.key === 'Enter' && e.target.id === 'heroName') {
+      const btns = document.querySelectorAll('#choices .choice');
+      if (btns[0]) btns[0].click();
+    }
+    return;
+  }
+  if (e.key >= '1' && e.key <= '9') {
+    const btns = document.querySelectorAll('#choices .choice');
+    const idx = Number(e.key) - 1;
+    if (btns[idx] && !btns[idx].disabled) btns[idx].click();
+  } else if (e.key === 'Enter' || e.key === ' ') {
+    skipTyping();
+  }
+}
+
+function boot() {
+  $('text').onclick = skipTyping;
+  document.addEventListener('keydown', onKey);
+  $('btnSave').onclick = function () {
+    if (!S) return toast('还没开始游戏。');
+    save();
+    toast('进度已保存。');
+  };
+  $('btnLoad').onclick = function () {
+    if (!hasSave()) return toast('没有找到存档。');
+    if (load()) { battle = null; render(); toast('进度已读取。'); }
+    else toast('存档损坏，无法读取。');
+  };
+  $('btnRestart').onclick = function () {
+    if (confirm('确定重新开始吗？当前进度会丢失。')) restart();
+  };
+  showTitle();
+}
+
+if (typeof document !== 'undefined') {
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', boot);
+  } else {
+    boot();
+  }
+}
+</script>
+</body>
+</html>
